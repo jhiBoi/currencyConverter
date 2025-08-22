@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Currency Converter</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>💱 Currency Converter</h1>
+    <p class="subtitle">Enter an amount, pick currencies, and convert with live rates.</p>
+
+    <div class="row">
+      <div>
+        <label for="amount">Amount</label>
+        <input id="amount" type="number" inputmode="decimal" min="0" step="any" placeholder="0.00" value="1" />
+      </div>
+      <div>
+        <label for="from">From</label>
+        <select id="from"></select>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="swap" id="swap" title="Swap currencies" aria-label="Swap currencies">⇅</button>
+      <div style="flex:1">
+        <label for="to">To</label>
+        <select id="to"></select>
+      </div>
+    </div>
+
+    <div class="cta">
+      <button id="convert" class="button">Convert</button>
+      <button id="clear" class="clear">Clear</button>
+    </div>
+
+    <div id="rate" class="rate" hidden>
+      <small>Rate</small>
+      <div id="rateValue">—</div>
+    </div>
+
+    <div id="result" class="result" hidden>
+      <div id="resultText">—</div>
+      <strong id="resultValue">—</strong>
+    </div>
+
+    <div id="error" class="result err" hidden>
+      Couldn’t fetch rates. Check your internet and try again.
+    </div>
+
+    <footer>Powered by exchangerate.host • No API key required</footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
