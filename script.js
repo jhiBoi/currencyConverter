@@ -13,7 +13,7 @@ const resultValue = document.getElementById('resultValue');
 const errorBox = document.getElementById('error');
 
 // Common fiat currencies
-const COMMON = ["USD","EUR","GBP","JPY","AUD","CAD","CHF","CNY","HKD","SGD","PHP","INR","KRW","NZD","THB","TWD","SEK","NOK","DKK","ZAR","AED","SAR"];
+const COMMON = ["USD","EUR","GBP","AED","JPY","AUD","CAD","CHF","CNY","HKD","SGD","PHP","INR","KRW","NZD","THB","TWD","SEK","NOK","DKK","ZAR","AED","SAR"];
 
 function fillSelect(sel, list){
   sel.innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -43,28 +43,33 @@ async function convert(){
   convertBtn.textContent = 'Converting…';
 
   try {
-    const url = `https://api.exchangerate.host/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}`;
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('Bad response');
-    const data = await res.json();
-    if (!data || !data.result || !data.info || !data.info.rate) throw new Error('Unexpected payload');
+  const apiKey = "d1e2faa1ad-c5344d7b7c-t1fgyw"; // put your real key here
+  const url = `https://api.fastforex.io/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}&api_key=${encodeURIComponent(apiKey)}`;
 
-    const rate = data.info.rate;
-    const out = data.result;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Bad response');
+  const data = await res.json();
 
-    rateValue.textContent = `1 ${from} = ${rate.toFixed(6)} ${to}`;
-    resultText.textContent = `${fmt(amount, from)} →`;
-    resultValue.textContent = fmt(out, to);
+  // Validate shape
+  if (!data || !data.result || !data.result[to]) throw new Error('Unexpected payload');
 
-    rateWrap.hidden = false;
-    resultWrap.hidden = false;
-  } catch (e) {
-    console.error(e);
-    errorBox.hidden = false;
-  } finally {
-    convertBtn.disabled = false;
-    convertBtn.textContent = 'Convert';
-  }
+  const out = data.result[to];      // converted value
+  const rate = out / amount;        // calculate rate from amount + converted value
+
+  rateValue.textContent = `1 ${from} = ${rate.toFixed(6)} ${to}`;
+  resultText.textContent = `${fmt(amount, from)} →`;
+  resultValue.textContent = fmt(out, to);
+
+  rateWrap.hidden = false;
+  resultWrap.hidden = false;
+} catch (e) {
+  console.error(e);
+  errorBox.hidden = false;
+} finally {
+  convertBtn.disabled = false;
+  convertBtn.textContent = 'Convert';
+}
+
 }
 
 // Swap currencies
