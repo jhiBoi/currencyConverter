@@ -10,7 +10,7 @@ const rateValue = document.getElementById('rateValue');
 const resultWrap = document.getElementById('result');
 const resultText = document.getElementById('resultText');
 const resultValue = document.getElementById('resultValue');
-const errorBox = document.getElementById('error');
+
 
 // Common fiat currencies
 const COMMON = ["USD","EUR","GBP","AED","JPY","AUD","CAD","CHF","CNY","HKD","SGD","PHP","INR","KRW","NZD","THB","TWD","SEK","NOK","DKK","ZAR","AED","SAR"];
@@ -30,7 +30,7 @@ const fmt = (v, currency) =>
   new Intl.NumberFormat(undefined, { maximumFractionDigits: 6, style: 'currency', currency }).format(v);
 
 async function convert(){
-  errorBox.hidden = true;
+ 
   rateWrap.hidden = true;
   resultWrap.hidden = true;
 
@@ -63,8 +63,7 @@ async function convert(){
   rateWrap.hidden = false;
   resultWrap.hidden = false;
 } catch (e) {
-  console.error(e);
-  errorBox.hidden = false;
+ 
 } finally {
   convertBtn.disabled = false;
   convertBtn.textContent = 'Convert';
