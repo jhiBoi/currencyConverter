@@ -1,23 +1,29 @@
-const amountEl = document.getElementById('amount');
-const fromEl   = document.getElementById('from');
-const toEl     = document.getElementById('to');
-const swapBtn  = document.getElementById('swap');
-const convertBtn = document.getElementById('convert');
-const clearBtn = document.getElementById('clear');
+// DOM Elements
+const amountEl    = document.getElementById('amount');
+const fromEl      = document.getElementById('from');
+const toEl        = document.getElementById('to');
+const swapBtn     = document.getElementById('swap');
+const convertBtn  = document.getElementById('convert');
+const clearBtn    = document.getElementById('clear');
 
-const rateWrap = document.getElementById('rate');
-const rateValue = document.getElementById('rateValue');
-const resultWrap = document.getElementById('result');
-const resultText = document.getElementById('resultText');
+const rateWrap    = document.getElementById('rate');
+const rateValue   = document.getElementById('rateValue');
+const resultWrap  = document.getElementById('result');
+const resultText  = document.getElementById('resultText');
 const resultValue = document.getElementById('resultValue');
-
+const errorBox    = document.getElementById('errorBox');
 
 // Common fiat currencies
-const COMMON = ["USD","EUR","GBP","AED","JPY","AUD","CAD","CHF","CNY","HKD","SGD","PHP","INR","KRW","NZD","THB","TWD","SEK","NOK","DKK","ZAR","AED","SAR"];
+const COMMON = [
+  "USD","EUR","GBP","AED","JPY","AUD","CAD","CHF","CNY","HKD","SGD",
+  "PHP","INR","KRW","NZD","THB","TWD","SEK","NOK","DKK","ZAR","SAR"
+];
 
+// Fill select boxes
 function fillSelect(sel, list){
   sel.innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join('');
 }
+
 fillSelect(fromEl, COMMON);
 fillSelect(toEl, COMMON);
 
@@ -25,79 +31,111 @@ fillSelect(toEl, COMMON);
 fromEl.value = "USD";
 toEl.value   = "PHP";
 
-// Format numbers
+// Number formatter
 const fmt = (v, currency) =>
-  new Intl.NumberFormat(undefined, { maximumFractionDigits: 6, style: 'currency', currency }).format(v);
+  new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 6,
+    style: "currency",
+    currency
+  }).format(v);
 
+// Error helpers
+function showError(msg){
+  errorBox.textContent = msg;
+  errorBox.hidden = false;
+  rateWrap.hidden = true;
+  resultWrap.hidden = true;
+}
+
+function clearError(){
+  errorBox.hidden = true;
+}
+
+// MAIN CONVERTER (ExchangeRate-API)
 async function convert(){
- 
+
+  clearError();
   rateWrap.hidden = true;
   resultWrap.hidden = true;
 
-  const amount = parseFloat(amountEl.value || "0");
+  const amount = parseFloat(amountEl.value);
   const from = fromEl.value;
-  const to = toEl.value;
-  if (!from || !to || !(amount >= 0)) return;
+  const to   = toEl.value;
+
+  if (!from || !to || isNaN(amount) || amount < 0){
+    showError("Invalid amount or currency selection.");
+    return;
+  }
 
   convertBtn.disabled = true;
-  convertBtn.textContent = 'Converting…';
+  convertBtn.textContent = "Converting…";
 
   try {
-  const apiKey = "d1e2faa1ad-c5344d7b7c-t1fgyw"; // put your real key here
-  const url = `https://api.fastforex.io/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}&api_key=${encodeURIComponent(apiKey)}`;
+    const apiKey = "d5fa71a6f8719a051233d837"; // replace with your free key from https://www.exchangerate-api.com/
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Bad response');
-  const data = await res.json();
+    // ExchangeRate-API endpoint for latest rates
+    const url = `https://v6.exchangerate-api.com/v6/${apiKey}/pair/${from}/${to}/${amount}`;
 
-  // Validate shape
-  if (!data || !data.result || !data.result[to]) throw new Error('Unexpected payload');
+    const res = await fetch(url);
 
-  const out = data.result[to];      // converted value
-  const rate = out / amount;        // calculate rate from amount + converted value
+    if (!res.ok) {
+      showError("Network error while contacting ExchangeRate-API.");
+      return;
+    }
 
-  rateValue.textContent = `1 ${from} = ${rate.toFixed(6)} ${to}`;
-  resultText.textContent = `${fmt(amount, from)} →`;
-  resultValue.textContent = fmt(out, to);
+    const data = await res.json();
 
-  rateWrap.hidden = false;
-  resultWrap.hidden = false;
-} catch (e) {
- 
-} finally {
+    if (data.result !== "success") {
+      showError("API error: " + data['error-type']);
+      return;
+    }
+
+    const out  = data.conversion_result;
+    const rate = data.conversion_rate;
+
+    // Update UI
+    rateValue.textContent = `1 ${from} = ${rate.toFixed(6)} ${to}`;
+    resultText.textContent = `${fmt(amount, from)} →`;
+    resultValue.textContent = fmt(out, to);
+
+    rateWrap.hidden = false;
+    resultWrap.hidden = false;
+
+  } catch (err){
+    showError("Conversion failed: " + err.message);
+  }
+
   convertBtn.disabled = false;
-  convertBtn.textContent = 'Convert';
+  convertBtn.textContent = "Convert";
 }
 
-}
-
-// Swap currencies
-swapBtn.addEventListener('click', () => {
-  const f = fromEl.value;
+// Swap button
+swapBtn.addEventListener("click", () => {
+  const temp = fromEl.value;
   fromEl.value = toEl.value;
-  toEl.value = f;
+  toEl.value = temp;
   convert();
 });
 
-// Buttons
-convertBtn.addEventListener('click', convert);
-clearBtn.addEventListener('click', () => {
-  amountEl.value = '';
+// Clear button
+clearBtn.addEventListener("click", () => {
+  amountEl.value = "";
+  clearError();
   rateWrap.hidden = true;
   resultWrap.hidden = true;
-  errorBox.hidden = true;
   amountEl.focus();
 });
 
-// Auto-convert on quick changes (debounced)
+// Auto convert (debounced)
 let t;
 function debounceConvert(){
   clearTimeout(t);
-  t = setTimeout(convert, 350);
+  t = setTimeout(convert, 300);
 }
+
 amountEl.addEventListener('input', debounceConvert);
 fromEl.addEventListener('change', convert);
 toEl.addEventListener('change', convert);
 
-// Initial run
+// Initial load
 convert();
